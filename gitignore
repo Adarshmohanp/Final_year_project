@@ -1,0 +1,74 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+venv311/
+ENV/
+env.bak/
+venv.bak/
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Virtual Environment
+backend/venv/
+backend/venv311/
+backend/__pycache__/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# TensorFlow models
+*.h5
+*.keras
+*.pb
+*.pbtxt
+*.meta
+*.index
+*.ckpt
+checkpoint/
+
+# Uploads
+backend/uploads/
+uploads/
+
+# Datasets (don't push large datasets)
+crop_train/
+crop_test/
+dataset/
+*.nii
+*.dcm
+*.nii.gz
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+*.ipynb
+
+# Environment variables
+.env
+*.env
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Project specific
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.gif
