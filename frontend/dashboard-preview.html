@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MRI Dashboard Preview</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* Quick fixes for preview */
+        .modal.active {
+            display: flex;
+        }
+        .content-section {
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+        }
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">🧠 MRI Analysis Dashboard</div>
+        <div class="nav-user">
+            <span id="user-name">Dr. Smith</span>
+            <button onclick="logout()" class="btn-logout">Logout</button>
+        </div>
+    </nav>
+    
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <ul class="nav-menu">
+                <li class="active" onclick="showSection('patients')">
+                    <span>👥</span> Patients
+                </li>
+                <li onclick="showSection('new-analysis')">
+                    <span>🔬</span> New Analysis
+                </li>
+                <li onclick="showSection('history')">
+                    <span>📊</span> History
+                </li>
+                <li onclick="showSection('profile')">
+                    <span>⚙️</span> Profile
+                </li>
+            </ul>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Patients Section -->
+            <section id="patients-section" class="content-section active">
+                <div class="section-header">
+                    <h2>Patients</h2>
+                    <button onclick="showAddPatientModal()" class="btn-primary">+ Add Patient</button>
+                </div>
+                <div class="patients-grid" id="patients-grid">
+                    <!-- Sample Patient Cards -->
+                    <div class="patient-card">
+                        <h3>John Doe</h3>
+                        <p>Age: 45 | Male</p>
+                        <p>Last analysis: Glioma (92% confidence)</p>
+                        <p>Added: 2024-01-15</p>
+                        <button class="view-records" onclick="viewPatientRecords('1')">View Records</button>
+                    </div>
+                    <div class="patient-card">
+                        <h3>Jane Smith</h3>
+                        <p>Age: 52 | Female</p>
+                        <p>Last analysis: No Tumor (98% confidence)</p>
+                        <p>Added: 2024-01-14</p>
+                        <button class="view-records" onclick="viewPatientRecords('2')">View Records</button>
+                    </div>
+                    <div class="patient-card">
+                        <h3>Mike Johnson</h3>
+                        <p>Age: 38 | Male</p>
+                        <p>Last analysis: Meningioma (87% confidence)</p>
+                        <p>Added: 2024-01-13</p>
+                        <button class="view-records" onclick="viewPatientRecords('3')">View Records</button>
+                    </div>
+                    <div class="patient-card">
+                        <h3>Sarah Williams</h3>
+                        <p>Age: 61 | Female</p>
+                        <p>Last analysis: Pituitary (79% confidence)</p>
+                        <p>Added: 2024-01-12</p>
+                        <button class="view-records" onclick="viewPatientRecords('4')">View Records</button>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- New Analysis Section -->
+            <section id="new-analysis-section" class="content-section">
+                <h2>New MRI Analysis</h2>
+                <div class="analysis-container">
+                    <form id="analysis-form" onsubmit="event.preventDefault(); analyzeMRI();">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Select Patient</label>
+                                <select id="patient-select" required>
+                                    <option value="">Choose a patient</option>
+                                    <option value="1">John Doe (45, Male)</option>
+                                    <option value="2">Jane Smith (52, Female)</option>
+                                    <option value="3">Mike Johnson (38, Male)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Or Add New Patient</label>
+                                <button type="button" onclick="showAddPatientModal()" class="btn-secondary">
+                                    + Quick Add
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Upload MRI Image</label>
+                            <div class="upload-area" id="upload-area" onclick="document.getElementById('mri-image').click()">
+                                <input type="file" id="mri-image" accept="image/*" style="display: none;" onchange="handleImageUpload(this)">
+                                <p>📁 Drag & drop or click to upload</p>
+                                <p style="font-size: 12px; color: #666;">(Sample preview - upload disabled)</p>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Additional Notes</label>
+                            <textarea id="analysis-notes" rows="3" placeholder="Enter any clinical notes..."></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn-primary btn-large">
+                            Analyze MRI
+                        </button>
+                    </form>
+                    
+                    <!-- Results Section (Hidden by default) -->
+                    <div id="analysis-results" class="results-container hidden">
+                        <h3>Analysis Results</h3>
+                        <div class="results-grid">
+                            <div class="result-card">
+                                <h4>Original MRI</h4>
+                                <img id="result-original" src="https://via.placeholder.com/300x300?text=MRI+Scan" alt="Original MRI">
+                            </div>
+                            <div class="result-card">
+                                <h4>Grad-CAM Heatmap</h4>
+                                <img id="result-heatmap" src="https://via.placeholder.com/300x300/ff7f7f/000000?text=Heatmap" alt="Heatmap">
+                            </div>
+                        </div>
+                        <div class="prediction-details">
+                            <div class="prediction-badge glioma" id="prediction-label">Glioma Detected</div>
+                            <div class="confidence-bar">
+                                <div class="confidence-fill" id="confidence-fill" style="width: 92%"></div>
+                            </div>
+                            <p style="text-align: center; margin: 10px 0;">Confidence: 92%</p>
+                            <div class="probabilities-chart">
+                                <canvas id="probChart" style="display: none;"></canvas>
+                                <div style="height: 200px; display: flex; align-items: center; justify-content: center; background: #f5f5f5; border-radius: 8px;">
+                                    <p>Probability chart would appear here</p>
+                                </div>
+                            </div>
+                            <button onclick="saveAnalysis()" class="btn-success">
+                                Save to Records
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- History Section -->
+            <section id="history-section" class="content-section">
+                <h2>Analysis History</h2>
+                <div class="filters">
+                    <input type="text" placeholder="Search patients..." id="search-history">
+                    <select id="filter-prediction">
+                        <option value="">All Predictions</option>
+                        <option value="glioma">Glioma</option>
+                        <option value="meningioma">Meningioma</option>
+                        <option value="pituitary">Pituitary</option>
+                        <option value="no_tumor">No Tumor</option>
+                    </select>
+                </div>
+                <div class="history-grid" id="history-grid">
+                    <!-- Sample History Cards -->
+                    <div class="history-card">
+                        <img src="https://via.placeholder.com/100x100?fluor=MRI+1" alt="MRI">
+                        <div class="history-info">
+                            <h4>John Doe</h4>
+                            <p>Age: 45 | Male</p>
+                            <span class="prediction" style="background: #f39c12; color: white; padding: 4px 8px; border-radius: 4px;">Glioma</span>
+                            <p style="margin-top: 5px;">Confidence: 92%</p>
+                            <p style="font-size: 12px; color: #666;">2024-01-15</p>
+                        </div>
+                    </div>
+                    <div class="history-card">
+                        <img src="https://via.placeholder.com/100x100?fluor=MRI+2" alt="MRI">
+                        <div class="history-info">
+                            <h4>Jane Smith</h4>
+                            <p>Age: 52 | Female</p>
+                            <span class="prediction" style="background: #27ae60; color: white; padding: 4px 8px; border-radius: 4px;">No Tumor</span>
+                            <p style="margin-top: 5px;">Confidence: 98%</p>
+                            <p style="font-size: 12px; color: #666;">2024-01-14</p>
+                        </div>
+                    </div>
+                    <div class="history-card">
+                        <img src="https://via.placeholder.com/100x100?fluor=MRI+3" alt="MRI">
+                        <div class="history-info">
+                            <h4>Mike Johnson</h4>
+                            <p>Age: 38 | Male</p>
+                            <span class="prediction" style="background: #3498db; color: white; padding: 4px 8px; border-radius: 4px;">Meningioma</span>
+                            <p style="margin-top: 5px;">Confidence: 87%</p>
+                            <p style="font-size: 12px; color: #666;">2024-01-13</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Profile Section -->
+            <section id="profile-section" class="content-section">
+                <h2>Doctor Profile</h2>
+                <div style="background: white; padding: 30px; border-radius: 15px;">
+                    <p><strong>Name:</strong> Dr. Sarah Smith</p>
+                    <p><strong>Email:</strong> sarah.smith@hospital.com</p>
+                    <p><strong>Specialization:</strong> Neuroradiology</p>
+                    <p><strong>Hospital:</strong> City General Hospital</p>
+                    <p><strong>Member since:</strong> January 2024</p>
+                </div>
+            </section>
+        </main>
+    </div>
+    
+    <!-- Add Patient Modal -->
+    <div id="patient-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h3>Add New Patient</h3>
+            <form id="add-patient-form" onsubmit="event.preventDefault(); addPatient();">
+                <div class="form-group">
+                    <label>Patient Name*</label>
+                    <input type="text" id="patient-name" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Age</label>
+                        <input type="number" id="patient-age">
+                    </div>
+                    <div class="form-group">
+                        <label>Gender</label>
+                        <select id="patient-gender">
+                            <option value="">Select</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Description/Notes</label>
+                    <textarea id="patient-description" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn-primary">Add Patient</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Simple JavaScript for preview functionality
+        
+        // Show different sections
+        function showSection(section) {
+            // Update active menu
+            document.querySelectorAll('.nav-menu li').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+            
+            // Hide all sections
+            document.querySelectorAll('.content-section').forEach(s => {
+                s.classList.remove('active');
+            });
+            
+            // Show selected section
+            document.getElementById(section + '-section').classList.add('active');
+        }
+        
+        // Show add patient modal
+        function showAddPatientModal() {
+            document.getElementById('patient-modal').classList.add('active');
+        }
+        
+        // Close modal
+        function closeModal() {
+            document.getElementById('patient-modal').classList.remove('active');
+        }
+        
+        // Add patient (preview)
+        function addPatient() {
+            alert('Patient added successfully! (Preview mode)');
+            closeModal();
+            document.getElementById('add-patient-form').reset();
+        }
+        
+        // View patient records
+        function viewPatientRecords(patientId) {
+            alert('Viewing records for patient ID: ' + patientId + ' (Preview mode)');
+            showSection('history');
+        }
+        
+        // Analyze MRI (preview)
+        function analyzeMRI() {
+            const patientSelect = document.getElementById('patient-select');
+            if (!patientSelect.value) {
+                alert('Please select a patient');
+                return;
+            }
+            
+            // Show results section
+            document.getElementById('analysis-results').classList.remove('hidden');
+            
+            // Scroll to results
+            document.getElementById('analysis-results').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Handle image upload (preview)
+        function handleImageUpload(input) {
+            if (input.files && input.files[0]) {
+                alert('Image selected: ' + input.files[0].name + ' (Preview mode - upload disabled)');
+            }
+        }
+        
+        // Save analysis (preview)
+        function saveAnalysis() {
+            alert('Analysis saved to records! (Preview mode)');
+            document.getElementById('analysis-results').classList.add('hidden');
+            document.getElementById('analysis-form').reset();
+            showSection('history');
+        }
+        
+        // Logout (preview)
+        function logout() {
+            if (confirm('Logout from dashboard?')) {
+                window.location.href = 'index.html';
+            }
+        }
+        
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('patient-modal');
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+        
+        // Initialize - show patients section by default
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Preview dashboard loaded!');
+        });
+    </script>
+</body>
+</html>

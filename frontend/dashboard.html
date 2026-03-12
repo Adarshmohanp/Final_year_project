@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - MRI Tumor Detection</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">🧠 MRI Analysis Dashboard</div>
+        <div class="nav-user">
+            <span id="user-name">Dr. Name</span>
+            <button onclick="logout()" class="btn-logout">Logout</button>
+        </div>
+    </nav>
+    
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <ul class="nav-menu">
+                <li class="active" onclick="showSection('patients')">
+                    <span>👥</span> Patients
+                </li>
+                <li onclick="showSection('new-analysis')">
+                    <span>🔬</span> New Analysis
+                </li>
+                <li onclick="showSection('history')">
+                    <span>📊</span> History
+                </li>
+                <li onclick="showSection('profile')">
+                    <span>⚙️</span> Profile
+                </li>
+            </ul>
+        </aside>
+        
+  <!-- Main Content -->
+<main class="main-content">
+    <!-- Patients Section -->
+    <section id="patients-section" class="content-section active">
+        <div class="section-header">
+            <h2>Patients</h2>
+            <button onclick="showAddPatientModal()" class="btn-primary">+ Add Patient</button>
+        </div>
+        <div class="patients-grid" id="patients-grid">
+            <!-- Patients will be loaded here -->
+        </div>
+    </section>
+    
+    <!-- New Analysis Section -->
+    <section id="new-analysis-section" class="content-section">
+        <h2>New MRI Analysis</h2>
+        <div class="analysis-container">
+            <form id="analysis-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Select Patient</label>
+                        <select id="patient-select" required>
+                            <option value="">Choose a patient</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Or Add New Patient</label>
+                        <button type="button" onclick="showAddPatientModal()" class="btn-secondary">
+                            + Quick Add
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Upload MRI Image</label>
+                    <div class="upload-area" id="upload-area">
+                        <input type="file" id="mri-image" accept="image/*" required>
+                        <p>Drag & drop or click to upload</p>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Additional Notes</label>
+                    <textarea id="analysis-notes" rows="3"></textarea>
+                </div>
+                
+                <button type="submit" class="btn-primary btn-large">
+                    Analyze MRI
+                </button>
+            </form>
+            
+            <!-- Results Section -->
+            <div id="analysis-results" class="results-container hidden">
+                <h3>Analysis Results</h3>
+                <div class="results-grid">
+                    <div class="result-card">
+                        <h4>Original MRI</h4>
+                        <img id="result-original" src="" alt="Original MRI">
+                    </div>
+                    <div class="result-card">
+                        <h4>Grad-CAM Heatmap</h4>
+                        <img id="result-heatmap" src="" alt="Heatmap">
+                    </div>
+                </div>
+                <div class="prediction-details">
+                    <div class="prediction-badge" id="prediction-label"></div>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill" id="confidence-fill"></div>
+                    </div>
+                    <div class="probabilities-chart">
+                        <canvas id="probChart"></canvas>
+                    </div>
+                    <button onclick="saveAnalysis()" class="btn-success">
+                        Save to Records
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- History Section -->
+    <section id="history-section" class="content-section">
+        <h2>Analysis History</h2>
+        <div class="filters">
+            <input type="text" placeholder="Search patients..." id="search-history">
+            <select id="filter-prediction">
+                <option value="">All Predictions</option>
+                <option value="glioma">Glioma</option>
+                <option value="meningioma">Meningioma</option>
+                <option value="pituitary">Pituitary</option>
+                <option value="no_tumor">No Tumor</option>
+            </select>
+        </div>
+        <div class="history-grid" id="history-grid">
+            <!-- History items will be loaded here -->
+        </div>
+    </section>
+
+    <!-- Profile Section (ADD THIS MISSING SECTION) -->
+    <section id="profile-section" class="content-section">
+        <h2>Doctor Profile</h2>
+        <div id="profile-content">
+            <!-- Profile content will be loaded by JavaScript -->
+        </div>
+    </section>
+</main>
+    </div>
+    
+    <!-- Add Patient Modal -->
+    <div id="patient-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h3>Add New Patient</h3>
+            <form id="add-patient-form">
+                <div class="form-group">
+                    <label>Patient Name*</label>
+                    <input type="text" id="patient-name" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Age</label>
+                        <input type="number" id="patient-age">
+                    </div>
+                    <div class="form-group">
+                        <label>Gender</label>
+                        <select id="patient-gender">
+                            <option value="">Select</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Description/Notes</label>
+                    <textarea id="patient-description" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn-primary">Add Patient</button>
+            </form>
+        </div>
+    </div>
+    
+    <script src="js/supabase-config.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+</html>

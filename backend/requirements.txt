@@ -1,0 +1,9 @@
+tensorflow
+flask
+flask-cors
+python-dotenv
+supabase
+pillow
+opencv-python
+numpy
+matplotlib
