@@ -249,10 +249,38 @@ function setupForms() {
     }
 }
 
+// function updateUploadAreaText(filename) {
+//     const uploadArea = document.getElementById('upload-area');
+//     if (uploadArea) {
+//         uploadArea.innerHTML = `<p>📁 ${filename}</p><small>Click or drag to change</small>`;
+//     }
+// }
+
+// function updateUploadAreaText(filename) {
+//     const uploadArea = document.getElementById('upload-area');
+//     const fileInput = document.getElementById('mri-image');
+
+//     if (uploadArea && fileInput) {
+//         uploadArea.innerHTML = `
+//             <input type="file" id="mri-image" accept="image/*" style="display:none">
+//             <p>📁 ${filename}</p>
+//             <small>Click or drag to change</small>
+//         `;
+
+//         // Reattach file input
+//         uploadArea.appendChild(fileInput);
+//     }
+// }
+
+
 function updateUploadAreaText(filename) {
     const uploadArea = document.getElementById('upload-area');
+
     if (uploadArea) {
-        uploadArea.innerHTML = `<p>📁 ${filename}</p><small>Click or drag to change</small>`;
+        const textElement = uploadArea.querySelector("p");
+        if (textElement) {
+            textElement.textContent = `📁 ${filename}`;
+        }
     }
 }
 
@@ -294,6 +322,8 @@ async function handleAnalysis() {
         </div>
     `;
     
+
+    console.log("Selected file:", fileInput.files[0]);
     // Create form data
     const formData = new FormData();
     formData.append('file', fileInput.files[0]);
@@ -307,6 +337,7 @@ async function handleAnalysis() {
         });
         
         const result = await response.json();
+        // generateAIExplanation(result);
         console.log('Received response:', result);
         
         if (!response.ok) {
@@ -319,6 +350,8 @@ async function handleAnalysis() {
         
         // Store result
         currentAnalysisResult = result;
+        result.all_probabilities = result.all_probabilities || {};
+        console.log(currentAnalysisResult);
         currentPatientId = patientId;
         
         // Convert base64 to data URLs for display
@@ -329,7 +362,7 @@ async function handleAnalysis() {
         
         // Display results
         displayRealResults(result);
-        
+        generateAIExplanation(result);
     } catch (error) {
         console.error('Analysis failed:', error);
         
@@ -354,8 +387,30 @@ async function handleAnalysis() {
 function displayRealResults(result) {
     const resultsDiv = document.getElementById('analysis-results');
     
+    // document.getElementById("ai-explanation").innerText = result.explanation;
+    let coverageLabel = "Estimated Tumor Coverage";
+
+    if(result.prediction.toLowerCase().replace(" ", "_") === "no_tumor"){
+        coverageLabel = "Model Activation Coverage";
+    }
     // Create results HTML
     let probabilitiesHtml = '';
+    // for (const [className, prob] of Object.entries(result.all_probabilities)) {
+    //     const color = getProbabilityColor(className);
+    //     probabilitiesHtml += `
+    //         <div style="margin: 10px 0;">
+    //             <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+    //                 <span>${className}</span>
+    //                 <span style="font-weight: bold; color: ${color};">${prob.toFixed(1)}%</span>
+    //             </div>
+    //             <div style="width: 100%; height: 8px; background: #f0f0f0; border-radius: 4px;">
+    //                 <div style="width: ${prob}%; height: 100%; background: ${color}; border-radius: 4px;"></div>
+    //             </div>
+    //         </div>
+    //     `;
+    // }
+    
+    if (result.all_probabilities) {
     for (const [className, prob] of Object.entries(result.all_probabilities)) {
         const color = getProbabilityColor(className);
         probabilitiesHtml += `
@@ -370,7 +425,10 @@ function displayRealResults(result) {
             </div>
         `;
     }
-    
+}
+
+
+
     resultsDiv.innerHTML = `
         <h3>Analysis Results</h3>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
@@ -398,8 +456,36 @@ function displayRealResults(result) {
                 </div>
             </div>
             
+            <h4><u>Model Attention Analysis</u></h4>
+
+            <div style="margin-bottom:15px;">
+                <strong>Primary Activation Region:</strong>
+                ${result.tumor_location || "Not detected"}
+            </div>
+
+            <div style="margin-bottom:15px;">
+                <strong>${coverageLabel}:</strong>
+                ${result.tumor_coverage != null ? result.tumor_coverage.toFixed(2) + "%" : "N/A"}
+            </div>
+
+            <hr style="margin:15px 0;">
+
             <h4>All Probabilities</h4>
             ${probabilitiesHtml}
+
+            <hr style="margin:20px 0;">
+
+            <h4>AI Clinical Explanation</h4>
+            <div id="ai-explanation" style="
+                background:#ffffff;
+                padding:15px;
+                border-radius:8px;
+                border-left:4px solid #3498db;
+                font-size:14px;
+                line-height:1.6;
+            ">
+                Generating AI explanation...
+            </div>
         </div>
         
         <div style="display: flex; gap: 10px; justify-content: flex-end;">
@@ -423,6 +509,25 @@ function getProbabilityColor(className) {
     };
     return colors[className.toLowerCase()] || '#95a5a6';
 }
+
+// // Enable zoom & pan on an image
+// function enableZoomOnImage(imgId) {
+//     const elem = document.getElementById(imgId);
+//     if (!elem) return;
+    
+//     const panzoom = Panzoom(elem, {
+//         maxScale: 5,
+//         minScale: 1,
+//         contain: 'inside',
+//         cursor: 'grab',
+//         step: 0.1
+//     });
+
+//     // Enable mouse wheel zoom
+//     elem.parentElement.addEventListener('wheel', panzoom.zoomWithWheel);
+// }
+
+
 
 // Retry function
 function retryAnalysis() {
@@ -725,6 +830,62 @@ function viewFullImage(originalUrl, heatmapUrl) {
     }
 }
 
+
+// function viewFullImage(originalUrl, heatmapUrl) {
+//     const modal = document.getElementById('patient-modal');
+//     if (!modal) return;
+
+//     const content = modal.querySelector('.modal-content');
+//     content.innerHTML = `
+//         <span class="close" onclick="closeModal()">&times;</span>
+//         <h3>MRI Analysis Images</h3>
+//         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+//             <div id="original-container">
+//                 <h4>Original MRI</h4>
+//                 <img id="original-img" src="${originalUrl}" style="max-width: 100%; display: block; border-radius: 8px;">
+//             </div>
+//             <div id="heatmap-container">
+//                 <h4>Grad-CAM Heatmap</h4>
+//                 <img id="heatmap-img" src="${heatmapUrl}" style="width: 100%; border-radius: 8px;">
+//             </div>
+//         </div>
+//     `;
+//     modal.classList.add('active');
+
+//     // Enable zoom & pan
+//     enableZoomOnImage('original-img');
+//     enableZoomOnImage('heatmap-img');
+// }
+
+
+// function viewFullImage(originalUrl, heatmapUrl) {
+//     const modal = document.getElementById('patient-modal');
+//     if (!modal) return;
+
+//     const content = modal.querySelector('.modal-content');
+//     content.innerHTML = `
+//         <span class="close" onclick="closeModal()">&times;</span>
+//         <h3>MRI Analysis Images</h3>
+//         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+//             <div id="original-container" style="overflow: hidden; border: 1px solid #ddd; border-radius: 8px;">
+//                 <h4>Original MRI</h4>
+//                 <img id="original-img" src="${originalUrl}" style="display: block; max-width: 100%; border-radius: 8px;">
+//             </div>
+//             <div id="heatmap-container" style="overflow: hidden; border: 1px solid #ddd; border-radius: 8px;">
+//                 <h4>Grad-CAM Heatmap</h4>
+//                 <img id="heatmap-img" src="${heatmapUrl}" style="display: block; max-width: 100%; border-radius: 8px;">
+//             </div>
+//         </div>
+//     `;
+//     modal.classList.add('active');
+
+//     // Enable zoom & pan
+//     enableZoomOnImage('original-img');
+//     enableZoomOnImage('heatmap-img');
+// }
+
+
+
 // ============= PROFILE =============
 // ============= PROFILE =============
 function loadProfile() {
@@ -811,6 +972,37 @@ function getPredictionColor(prediction) {
         'No Tumor': '#27ae60'
     };
     return colors[prediction] || '#95a5a6';
+}
+
+
+async function generateAIExplanation(result){
+
+    try{
+
+        const response = await fetch(
+            "http://localhost:5000/api/gemini-explain",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(result)
+            }
+        );
+
+        const data = await response.json();
+
+        document.getElementById("ai-explanation").innerText =
+        data.explanation;
+
+    }catch(error){
+
+        console.error("Gemini error:", error);
+
+        document.getElementById("ai-explanation").innerText =
+        "AI explanation unavailable.";
+
+    }
 }
 
 // Make functions globally available for onclick handlers
