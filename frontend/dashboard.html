@@ -72,7 +72,7 @@
                 <div class="form-group">
                     <label>Upload MRI Image</label>
                     <div class="upload-area" id="upload-area">
-                        <input type="file" id="mri-image" accept="image/*" required>
+                        <input type="file" id="mri-image" accept="image/*">
                         <p>Drag & drop or click to upload</p>
                     </div>
                 </div>
@@ -107,6 +107,13 @@
                     </div>
                     <div class="probabilities-chart">
                         <canvas id="probChart"></canvas>
+                    </div>
+
+                    <div class="ai-explanation-box">
+                        <h4>AI Clinical Interpretation</h4>
+                        <div id="ai-explanation">
+                            Waiting for analysis...
+                        </div>
                     </div>
                     <button onclick="saveAnalysis()" class="btn-success">
                         Save to Records
@@ -179,6 +186,7 @@
     </div>
     
     <script src="js/supabase-config.js"></script>
+    <script src="https://unpkg.com/@panzoom/panzoom/dist/panzoom.min.js"></script>
     <script src="js/dashboard.js"></script>
 </body>
 </html>
